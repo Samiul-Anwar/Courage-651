@@ -1,0 +1,96 @@
+;; GRASS-BASIC
+
+;; This module provides the core functionality for patches to operate as grass by giving them their
+;; grass-like characteristics like energy value and color behaviors.
+
+;; INTERFACE REQUIREMENTS
+;; grass_start_min                                                    ;; This is the minimum amount of grass energy each patch starts with
+;; grass_max                                                          ;; This is the maximum amount of grass that a patch can hold
+;; grass_growth_rate                                                  ;; This is the linear growth rate of grass in a cell
+
+;; GLOBALS REQUIREMENTS
+;; open-cells                                                         ;; The set of cells that are not obstacles and thus "open" to be moved into
+;; grass-open-cells                                                   ;; The set of cells that have grass (but are not obstacles or warrens)
+
+;; PATCHES-OWN
+;; grass-amount                                                       ;; amount of grass "energy" in the cell
+;; obstacle                                                           ;; cells that cannot be moved into
+
+;; SETUP REQUIREMENTS
+;; Include grass-basic-setup AFTER patches-basic-setup.               ;; this ensures that the layer order of patches and grass is correct
+
+
+;; GO REQUIREMENTS
+;; Include grass-basic-grow
+
+
+to grass-basic-setup                                                         ;; Setup option 1. Set up patches to act as grass
+  set grass-open-cells patches with [true]        ;; only let grass grow where there are no obstacles and no warrens
+  
+  ask patches [ set grass-amount 0 ]                                         ;; Every patch, regardless of type, gets its grass energy zeroed
+  ask grass-open-cells [                                                     ;; The set of patches that are not obstacles are asked to
+    set grass-amount min-initial-grass-amount + random-float (max-grass-amount - min-initial-grass-amount)    
+    ;; Set grass energy to a random amount between the minimum and the maximum
+    fix-color
+  ]
+  
+  set grass_growth_amount grass_growth_amount_initial
+end
+
+to grass-basic-grow                                                            ;; basic grow function for grass
+  
+  if ( grass_growth_amount < 0.01)
+  [
+    ;et grass_growth_amount grass_growth_amount_initial / 10
+  ]
+  set grass_growth_amount grass_growth_amount * grass_growth_amount_multiplier    ;; as the world gets older, the grass re-growth slows down
+  
+  
+  ask grass-open-cells [                                                               ;; Ask patches that are not obstacles to:
+    let x grass-amount
+    set grass-amount min(list max-grass-amount (grass-amount + grass_growth_amount))
+    set total_grass ( total_grass + grass-amount)
+    ;set grass-amount max(list grass-amount  (rabbit_food_gain))
+    fix-color
+  ]                                                                                                
+end
+
+
+to loot-decay                                                            ;; basic grow function for grass
+  
+     ;; as the world gets older, the grass re-growth slows down
+  
+  ask grass-open-cells [                                                               ;; Ask patches that are not obstacles to:
+    set loot-amount ( loot-amount * decay-rate)
+    if (loot-amount > 0)
+    [
+      set corpse-risk (exp (-1 * tm))
+      set tm (tm + 1)
+    ]
+    set total_loot ( total_loot + loot-amount)
+    
+  ]                                                                                                
+end
+
+to eat [total-eaten]
+  set grass-amount grass-amount - total-eaten                ;; eat the grass
+  set total_grass ( total_grass - total-eaten)
+  fix-color
+end
+
+to add-loot [amount]
+  let x loot-amount
+  set loot-amount min(list (loot-amount + amount) maximum-loot )                ;; eat the grass
+  set total_grass ( total_grass - (loot-amount - x))
+end
+
+to fix-color
+  ;; if grass-amount is LARGER -> darker
+  ;; aka:
+  ;;   greater than 0            -> darker
+  ifelse (visualize-grass) [ 
+  set pcolor scale-color green grass-amount (max-grass-amount * 4) 0            ;; Adjust the color of the patch to represent the new amount of grass energy it contains
+  ] [
+    set pcolor white
+  ]
+end

@@ -1,0 +1,20 @@
+;; PATCHES-BASIC-FREEDOM
+
+;; This module extends the patches-basic.nls module by allowing cells to have freedom values assigned to them.
+
+;; INTERFACE REQUIREMENTS
+;; None
+
+;; GLOBALS REQUIREMENTS
+;; None
+
+;; PATCHES-OWN REQUIREMENTS
+;; freedom                                            ;; count of the number of neighbors that are open to agen movement
+
+;; SETUP REQUIREMENTS
+;; patches-basic.nls MUST be loaded in advance of this module.
+
+
+ask open-cells [
+  set freedom (count neighbors with [ not obstacle ]) ;; the freedom of a patch/cell is the number of its neighbors which are not obstacles
+]

@@ -1,0 +1,4 @@
+to fix-coordinates
+  set xcor (round xcor)
+  set ycor (round ycor)
+end

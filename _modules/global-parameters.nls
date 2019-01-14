@@ -1,0 +1,77 @@
+to fill-in-simulation-parameters
+  
+  ;; fills in simulation parameters
+  set rabbit_tick_cost 1
+  set wolf_tick_cost rabbit_tick_cost
+  
+ ; set rabbit_cognitive_cost_initial 0.01
+ ; set wolf_cognitive_cost_initial rabbit_cognitive_cost_initial
+
+ ; set rabbit_cognitive_cost_multiplier 0.0001
+ ; set wolf_cognitive_cost_multiplier rabbit_cognitive_cost_multiplier
+  
+  set num_grass_cells 20
+  
+ ; set random_seeding 25  
+  
+  set rabbit_max_age 100
+  ;set wolf_max_age rabbit_max_age
+  set wolf_max_age 400000
+  
+  set rabbit_max_population 2000
+  set wolf_max_population 100
+  
+  set map_name "_modules/_maps/empty2.png"
+  
+  set rabbit_min_energy 0
+ ; set wolf_min_energy rabbit_min_energy
+  set wolf_min_energy 0
+  
+  set rabbit_max_energy 100
+  set wolf_max_energy 200
+  
+  set rabbit_start_energy ((rabbit_min_energy + rabbit_max_energy) / 2)
+  set wolf_start_energy ((wolf_min_energy + wolf_max_energy) / 2)
+  
+  set rabbit_energy_threshold rabbit_start_energy
+  set wolf_energy_threshold wolf_start_energy
+  
+;  set groupie_color 110
+;  set guru_color    20
+  set wolf_color 95
+
+ ; set max-grass-amount         4 * rabbit_food_gain
+ ; set min-initial-grass-amount 2 * rabbit_food_gain
+  
+  set max-grass-amount         4 * .75
+  set min-initial-grass-amount 1 * .75
+  
+  set rabit_sight_radius 3
+  set wolf_sight_radius 3
+  set rabbit_food_gain .8
+  set wolf_food_gain .5
+  set initial_trauma 0
+  set max_trauma 100
+  set trauma_threshold 70
+  set grass_growth_amount_initial 0.934
+  set grass_growth_amount_multiplier 0.99;0.990;0.9957
+  set grass_growth_amount_multiplier2 1.01
+  set visualize-grass true
+  set rabbit_initial_number 50
+  set initial_max_sight_radius 1
+  set rabbit_min_reproduction_energy 30
+  set rabbit_min_reproduction_age 20
+  set wolf_initial_number 5
+  ;set wolf_energy_threshold 50
+  set wolf_min_reproduction_energy 150
+  set wolf_min_reproduction_age 100
+  set total_risk 0
+  set mean-bag-capacity 10
+  set rabbit_bag_gain  0.5
+  set decay-rate 0.9
+  set maximum-loot 10
+  set minar 1000
+  set maxar -1000
+  set total_grass 0 
+  set risk_set []
+end

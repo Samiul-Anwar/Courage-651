@@ -1,0 +1,66 @@
+;; AFFINITY-HATCH
+
+;; This module is called in RABBIT-AFFINITY as part of the rabbit-affinity-reproduce procedure
+
+;; INTERFACE REQUIREMENTS
+;; rabbit_cognitive_cost_initial                                ;; Initial cost of thinking of the rabbit
+;; wolf_cognitive_cost_initial                                 ;; Initial cost of thinking of the wolf
+;; rabbit_start_energy                                          ;; Energy that each rabbit starts with
+;; wolf_start_energy                                           ;; Energy that each wolf starts with
+;; mutation_rate                                               ;; rate of genetic mutation of the rabbit 
+
+;; GLOBALS REQUIREMENTS
+;; none
+
+;; PATCHES-OWN REQUIREMENTS
+;; none
+
+;; TURTLES-OWN REQUIREMENTS
+;; age                                                         ;; number of ticks that a turtle has been alive
+;; energy                                                      ;; roughly equivalent to health points.  Typically consumed by turtles to perform actions like moving or reproducing.
+;; cognitive-cost                                              ;; per-cell cost of thinking (thinking uses energy)
+;; epsilon                                                     ;; percentage of time an agent takes a random move
+;; cells-considered                                            ;; cells touched/considered while thinking
+;; sight-radius                                                ;; sight radius
+;; aff-rabbit                                                   ;; affinity to rabbits
+;; aff-grass                                                   ;; affinity to grass
+;; aff-wolf                                                    ;; affinity to wolves
+;; aff-safety                                                 ;; affinity to safety
+
+;; BREED-OWN REQUIREMENTS
+;; None                                                        ;; not defining breed requirements using BREED-OWN currently
+
+;; SETUP REQUIREMENTS
+;; none
+
+;; GO REQUIREMENTS
+;; rabbit-affinity-reproduce must be called in GO  
+
+to affinity-hatch
+  hatch 1 [                                                    ;; produce a new rabbit or wolf, and initialize its values 
+                                                               
+    ifelse (breed = rabbits)
+    [
+      set cognitive-cost rabbit_cognitive_cost_initial          ;; IF it is a rabbit, then set rabbit initial cognitive cost and energy
+      set energy rabbit_start_energy
+    ]
+    [
+      set cognitive-cost wolf_cognitive_cost_initial           ;; ELSE set the wolf initial cognitive cost and energy
+      set energy wolf_start_energy
+    ]
+    
+    set age 0                                                  ;; set initial age, cells-considered, and size
+    set cells-considered 0
+    set size 1
+    
+                                                               ;; mutate genetic values. (See mutate.nls for details)
+    ;set epsilon (mutate epsilon mutation_rate)                 ;; each rabbit/wolf has an epsilon value. We want to mutate the epsilon value during reproduction
+    ;set epsilon (max (list 0 epsilon))                                   ;; keep the epsilon value above 0
+    ;set epsilon (min (list 1 epsilon))                                   ;; keep the epsilon value below 1
+    set sight-radius (max (list 1 (mutate sight-radius mutation_rate)))  ;; mutate the sight radius value
+    set aff-grass (mutate aff-grass mutation_rate)                       ;; mutate the aff-grass value
+    set aff-wolf (mutate aff-wolf mutation_rate)                         ;; mutate the aff-wolf value
+    set aff-rabbit (mutate aff-rabbit mutation_rate)                       ;; mutate the aff-rabbit value
+    set aff-safety (mutate aff-safety mutation_rate)                   ;; mutate the aff-safety value
+  ]
+end

@@ -1,0 +1,34 @@
+;; AFFINITY-AGE
+
+;; This module is called in RABBIT-AFFINITY2 as part of the rabbit-affinity-age procedure
+
+;; INTERFACE REQUIREMENTS
+;; none
+
+;; GLOBALS REQUIREMENTS
+;; none
+
+;; PATCHES-OWN REQUIREMENTS
+;; none
+
+;; TURTLES-OWN REQUIREMENTS
+;; age                                                         ;; number of ticks that a turtle has been alive
+;; energy                                                      ;; roughly equivalent to health points.  Typically consumed by turtles to perform actions like moving or reproducing.
+;; cognitive-cost                                              ;; per-cell cost of thinking (thinking uses energy)
+;; cognitive-cost-multiplier                                   ;; rate at which the cost of thinking goes up per tick (it requires more energy to think with age)
+  
+;; BREED-OWN REQUIREMENTS
+;; None                                                        ;; not defining breed requirements using BREED-OWN currently
+
+;; SETUP REQUIREMENTS
+;; none
+
+;; GO REQUIREMENTS
+;; rabbit-affinity-age must be called in GO                     
+
+
+to affinity-age
+  set age age + 1                                                  ;; increment its age
+ ; set cognitive-cost (cognitive-cost * cognitive-cost-multiplier)  ;; increase its cognitive cost
+    set size ((ln (energy + 1)) / 2)                                     ;; reset size
+end

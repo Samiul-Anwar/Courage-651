@@ -1,0 +1,71 @@
+;; GRASS-SPARSE
+
+;; This module is a variant of grass-basic.nls. Grass grows in a limited number of patches.
+;; It provides the core functionality for patches to operate as grass by giving them their
+;; grass-like characteristics like energy value and color behaviors.
+
+;; INTERFACE REQUIREMENTS
+;; grass_start_min                                                    ;; This is the minimum amount of grass energy each patch starts with
+;; grass_max                                                          ;; This is the maximum amount of grass that a patch can hold
+;; grass_growth_rate                                                  ;; This is the linear growth rate of grass in a cell
+;; grass_num_cells                                                    ;; This is the number of cells with grass
+
+;; GLOBALS REQUIREMENTS
+;; open-cells                                                         ;; The set of cells that are not obstacles and thus "open" to be moved into
+;; grass-open-cells                                                   ;; The set of cells that have grass (but are not obstacles or warrens)
+
+;; PATCHES-OWN
+;; grass-amount                                                       ;; amount of grass "energy" in the cell
+; obstacle                                                            ;; cells that cannot be moved into
+
+;; SETUP REQUIREMENTS
+;; Include grass-basic-setup AFTER patches-basic-setup.               ;; this ensures that the layer order of patches and grass is correct
+
+
+;; GO REQUIREMENTS
+;; Include grass-basic-grow
+
+
+to grass-sparse-setup                                                                    ;; Setup option 2. Set up ONLY A CERTAIN AMOUNT of patches to act as grass       
+  
+  set grass-open-cells n-of num_grass_cells patches with [(not warren) and (not obstacle)]   ;; only let grass grow in n number of open-cells where there are no obstacles and no warrens
+  ask patches [ 
+    set grass-amount 0                                                                   ;; Every patch, regardless of type, gets its grass energy zeroed
+  
+  ]                                    
+;  ask grass-open-cells [                                                                 ;; The set of patches that are not obstacles are asked to
+;    
+;    set grass-amount grass_start_min + random-float (grass_max - grass_start_min)        ;; Set grass energy to a random amount between the minimum and the maximum
+;    set pcolor scale-color green grass-amount (4 * grass_max) 0                          ;; Set the colour of itself to represent the amount of grass energy available
+   
+  ask grass-open-cells [                                                                 ;; The set of patches that are not obstacles are asked to
+    set grass-amount grass_max                                                           ;; Set grass energy to a random amount between the minimum and the maximum
+    set pcolor green                                                                     ;; Set the colour of itself to represent the amount of grass energy available
+    ;set grass-count-down 0
+  ]
+end
+
+to grass-basic-grow                                                          ;; basic grow function for grass
+                                                                      
+;  ask grass-open-cells [                                                           ;; Ask patches that are not obstacles to:
+;    set grass-amount min(list grass_max (grass-amount + grass_growth_rate))  ;; set grass energy to the max of the total amount of grass energy,  
+;                                                                             ;; or the current energy amount plus the grass growth rate.
+;                                                                             ;; Grass cannot grow over the max set
+;    set pcolor scale-color green grass-amount (4 * grass_max) 0              ;; Adjust the color of the patch to represent the new amount of grass energy it contains
+;  ]
+  
+  ask grass-open-cells [                                                      ;; this ask procedure is for BINARY grass                
+    
+    ifelse (grass-amount = 0) and (grass-count-down = 0) [
+      
+      set grass-amount grass_max                                             
+      set pcolor green  
+      
+    ]                                                                                                
+    [if grass-count-down != 0 [
+      set grass-count-down grass-count-down - 1
+      ]
+    ] 
+  ]
+
+end

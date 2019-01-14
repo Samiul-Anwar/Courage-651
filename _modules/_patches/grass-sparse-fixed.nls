@@ -1,0 +1,65 @@
+;; GRASS-SPARSE-BINARY
+
+;; This module is a variant of grass-basic.nls and grass-sparse.nls Grass grows in a limited number of patches.
+;; Grass only has two states: existant or non-existant
+
+;; INTERFACE REQUIREMENTS
+;; grass_max                                                          ;; This is the maximum amount of grass that a patch can hold
+;; grass_num_cells                                                    ;; This is the number of cells with grass
+;; num_grass_cells                                                    ;; Number of grass cells in the world
+
+;; GLOBALS REQUIREMENTS
+;; open-cells                                                         ;; The set of cells that are not obstacles and thus "open" to be moved into
+;; grass-open-cells                                                   ;; The set of cells that have grass (but are not obstacles or warrens)
+
+;; PATCHES-OWN
+;; grass-amount                                                       ;; amount of grass "energy" in the cell
+;; obstacle                                                            ;; cells that cannot be moved into
+;; warren
+;; grass-count-down
+
+;; SETUP REQUIREMENTS
+;; Include grass-binary-setup AFTER patches-basic-setup.               ;; this ensures that the layer order of patches and grass is correct
+
+;; GO REQUIREMENTS
+;; Include grass-binary-grow
+
+
+to grass-binary-setup                                                                    ;; Set up ONLY A CERTAIN AMOUNT of patches to act as grass with two states       
+  
+  
+ 
+  set grass-open-cells patches with [(not warren) and (not obstacle) and (grass)]      
+  
+  ask patches [ 
+    set grass-amount 0                                                                   ;; Every patch, regardless of type, gets its grass energy zeroed
+    
+  ]                                    
+  
+  ask grass-open-cells [                                                                 ;; The set of patches that are not obstacles are asked to
+    set grass-amount grass_max                                                           ;; Set grass amount to the maximum available
+  ]
+  set grass-growth-delay grass_growth_delay_initial                                      ;; initialize the grass growth delay
+end
+
+to grass-binary-grow                                                          ;; basic grow function for grass
+  
+  set grass-growth-delay grass-growth-delay * grass_growth_delay_multiplier   ;; as the world gets older, the grass re-growth slows down
+  
+  ask grass-open-cells [                                                      ;; this ask procedure is for BINARY grass                
+    
+    ifelse (grass-amount = 0) and (grass-count-down <= 0) [                    ;; IF the grass amount is 0 AND the grass count down has hit 0
+      
+      set grass-amount grass_max                                              ;; THEN set the grass amount to the maximum amount
+      set pcolor green                                                        ;; change the patch color to green
+      
+    ]                                                                                                
+    [
+      if (grass-count-down > 0) 
+      [                                               ;; ELSE check that the count down is not already zero (avoids a negative count)
+        set grass-count-down grass-count-down - 1                               ;; decrease the grass count by 1
+      ]
+    ] 
+  ]
+  
+end

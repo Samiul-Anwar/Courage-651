@@ -1,0 +1,111 @@
+;; SHEEP-RANDOM                                                
+
+;; This module enables rabbit with fully random behaviours.  These rabbit don't evolve or do anything fancy.
+;; We don't expect to really use this agent type other than as an example of how to use the new module-based format and, possibly, benchmarking.
+
+;; INTERFACE REQUIREMENTS
+
+;; rabbit_initial_number                                        ;; Number of rabbit to create on the first tick of the simulation
+;; rabbit_start_energy                                          ;; Energy the rabbit start with 
+;; rabbit_min_energy                                            ;; Energy cutoff below which a rabbit dies
+;; rabbit_tick_cost                                             ;; Amount of energy a rabbit must pay to live into the next tick
+;; rabbit_food_gain                                             ;; Upper limit on the amount of energy a rabbit can extract from a patch of grass
+;; rabbit_max_energy                                            ;; Total energy that a rabbit is capable of holding
+;; rabbit_min_reproduction_energy                               ;; Energy cost for a rabbit to clone itself during reproduction
+
+;; GLOBALS REQUIREMENTS
+;; open-cells                                                  ;; cells that are not obstacles/impassable
+;; rabbit-open-cells                                            ;; patches where rabbit can go
+
+;; PATCHES-OWN REQUIREMENTS
+;; obstacle                                                    ;; Boolean (true/false) that states if the cell is an obstacle
+;; grass-amount                                                ;; amount of grass in the cell. The amount of grass is equivalent to the energy available to a turtle
+
+;; TURTLES-OWN REQUIREMENTS
+;; energy                                                      ;; roughly equivalent to health points.  Typically consumed by turtles to perform actions like moving or reproducing.
+;; age                                                         ;; number of ticks that a turtle has been alive
+
+;; BREED-OWN REQUIREMENTS
+;; None                                                        ;; don't really need breed requirements now because rabbit don't do much
+
+breed [rabbit a-rabbit]                                          ;; create a breed to allow direct access to all turtles of type rabbit
+
+;; SETUP REQUIREMENTS
+;; Include rabbit-random-setup                                  ;; Set up the rabbit in the world
+
+;; GO REQUIREMENTS
+;; Include rabbit-random-move                                   ;; Move rabbit
+;; Include rabbit-random-eat                                    ;; Rabbit consume energy from grass patches
+;; Inlcude rabbit-random-die                                    ;; Check rabbit for minimum energy level
+;; Include rabbit-random-reproduce                              ;; Rabbit clone themseleves if they have enough energy
+
+to rabbit-random-setup                                          ;; set up the rabbit in the world, and initialize their variables
+  
+  set rabbit-open-cells patches with [ not obstacle ]           ;; rabbit can go anywhere that isn't an obstacle
+  
+  create-rabbit rabbit_initial_number                            ;; create number of rabbit equal to rabbit_initial_number from interface
+  [
+    set color orange                                           ;; sets rabbit color to orange
+    set energy rabbit_start_energy                              ;; set rabbit starting energy to rabbit_start_energy from interface
+    set age 0                                                  ;; set birth age to zero
+    set size 2                                                 ;; set the size so the rabbit can be easily seen 
+    move-to one-of open-cells                                  ;; put each rabbit in a random "open-cell" (see patches)
+  ]
+end
+
+
+to rabbit-random-move                                           ;; rabbit move randomly in the world
+  
+  ask rabbit [                                                  ;; Ask each rabbit to:
+    
+    let random-neighbor one-of (neighbors with [not obstacle]) ;; randomly choose a patch immediately adjacent to the patch it is currently on that is open to rabbit THIS IS SLOWER: let random-neighbor one-of rabbit-open-cells in-radius 1
+    face random-neighbor                                       ;; face that patch 
+    ;move-to random-neighbor                                   ;; move-to that patch (move-to teleports)          
+    fd 1                                                       ;; move into the adjacent patch
+    fix-coordinates                                            ;; adjust location coordinates to be integer values. Function from base model
+    
+    set energy energy - rabbit_tick_cost                        ;; pay the cost of living for this tick
+  ]  
+end
+
+
+to rabbit-random-eat                                            
+  
+;  ask rabbit [                                                  ;; Ask each rabbit to:
+;    let can-eat min (list rabbit_food_gain grass-amount)        ;; determine how much grass they can eat. Rabbit eat the amount of grass available,
+;                                                               ;; or the amount of grass equivalent to the energy they gain from food
+;    set grass-amount grass-amount - can-eat                    ;; subtract the amount eaten from the original grass amount
+;    
+;    set energy min (list rabbit_max_energy (energy + can-eat))  ;; adjust the energy the rabbit currently has. The rabbit cannot have energy higher than the max energy allowed.
+;  ]
+;end
+  
+    if grass-amount = grass_max [                               ;; only use this ask procedure for rabbit eating binary grass       
+                                              
+      set energy min (list rabbit_max_energy (energy + grass-amount)) 
+      set pcolor white
+      set grass-amount 0
+      set grass-count-down grass_growth_rate
+   
+    ] 
+    
+  ]
+end
+
+
+to rabbit-random-die
+  ask rabbit[                                                    ;; Ask each rabbit to:
+    ifelse energy < rabbit_min_energy [ die ] [set age age + 1]  ;; Die if it doesn't have the minimum energy. Otherwise increment its age.
+  ]
+end
+
+
+to rabbit-random-reproduce
+  ask rabbit [                                                 ;; Ask each rabbit to:
+    if energy > rabbit_min_reproduction_energy [               ;; Check energy level and if past the reproduction threshold:
+      set energy energy - rabbit_min_reproduction_energy       ;; subtract the cost of reproduction from its energy levels
+      hatch 1 [ set energy (rabbit_start_energy)               ;; create a new turtle, and set its starting energy and set its size
+                set size 2 ]                                           
+    ]
+  ]
+end

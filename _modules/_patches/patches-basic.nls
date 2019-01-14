@@ -1,0 +1,74 @@
+;; PATCHES-BASIC
+
+;; This module provides the core functionality for patches to operate by giving them basic grass characteristics and allowing
+;; the import of maps with walls.
+
+;; INTERFACE REQUIREMENTS
+;; map-name                                            ;; needs to point to a set of files that can be loaded as maps
+
+;; GLOBALS REQUIREMENTS
+;; open-cells                                          ;; the set of cells that are not obstacles and thus "open" to be moved into
+
+;; PATCHES-OWN REQUIREMENTS
+;; obstacle                                            ;; boolean reporting if a cell is an obstacle or not
+;; warren                                              ;; boolean reporting if a cell is a rabbit/rabbit warren or not
+
+;; SETUP REQUIREMENTS
+;; Include patches_basic_setup BEFORE grass or turtle setup.
+
+
+;; GO REQUIREMENTS
+;; None
+
+to patches-basic-setup                                 ;; set up obstacles by converting a MATLAB-produced visualization of a map into patches
+  
+  import-pcolors map_name                              ;; pulls in a named map/file and converts it to netlogo colours
+  
+  ask patches [
+    
+    ifelse (pcolor < 3) [                              ;; IF the colour is the shade of grey the MATLAB visualization uses for walls (3) THEN
+      ;;set obstacle true                                ;; make that patch an obstacle by setting its boolean obstacle value to TRUE
+      ;;set warren false
+      set grass true
+      set pcolor black                                 ;; change its colour to black (0)
+    ]
+    [ ifelse  (pcolor >= 80 and pcolor <= 90)
+      ;ifelse  (pcolor >= 10 and pcolor <= 139)         ;; ELSE test to see IF the colour is the shade we are using for rabbit warrens
+      [
+       ;; set warren true                                ;; Set the warren flag to true
+       ;; set obstacle false                             ;; Set the obstacle flag to false
+        set grass true
+        set pcolor magenta                             ;; Set the colour to magenta (could really be anything)
+      ]
+      
+      [ ifelse (pcolor >= 61 and pcolor <= 69)
+        [
+          set pcolor green
+        ;;  set obstacle false                              ;; ELSE the patch isn't a wall so set its obstacle value to FALSE and leave the colour alone
+        ;;  set warren false                                ;; Set the warren flag to false
+          set grass true
+        ]
+        [ 
+          set pcolor white
+        ;;  set obstacle false                              ;; ELSE the patch isn't a wall so set its obstacle value to FALSE and leave the colour alone
+        ;;  set warren false                                ;; Set the warren flag to false
+          set grass true
+        ]
+      ]
+    ]
+    set corpse-risk 0
+    set tm 0
+  ]
+  ;resize-world 0 50 0 50
+  ;; compute all available cells
+ ;; set open-cells patches with [ not obstacle ]         ;; Create the set of cells available for movement by collecting patches with obstacle as FALSE
+ ;;  set open-cells true
+  ;  ask open-cells [
+  ;    
+  ;    set distance-to-safety safe-distance
+  ;  ]
+  
+  
+  ;;ask open-cells [ find-safe-distance ]                ;; compute the distance to the warren of each open cell. (see safe-distance.nls for details)
+  
+end

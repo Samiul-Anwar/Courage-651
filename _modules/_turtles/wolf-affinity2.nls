@@ -1,0 +1,212 @@
+;; WOLF-AFFINITY2
+
+;; This module enables wolves with affinities, evolution, and full modularity. It is a variant of wolf-affinity.nls, which only accounted for four affinities
+
+;; INTERFACE REQUIREMENTS
+
+;; wolf_minimum_number                                        ;; Number of wolves to create on the first tick of the simulation
+;; wolf_max_population                                        ;; Maximum population of rabbits allowed in the simulation
+;; wolf_max_age                                               ;; Maximum age, in ticks, that rabbits can live
+
+;; wolf_start_energy                                          ;; Energy the wolves start with
+;; wolf_min_energy                                            ;; Energy cutoff below which a wolf dies
+;; wolf_food_gain                                             ;; Upper limit on the amount of energy a wolf can gain from eating a rabbit
+;; wolf_max_energy                                            ;; Total energy that a wolf is capable of holding
+;; wolf_min_reproduction_energy                               ;; Energy cost for a wolf to clone itself during reproduction
+;; wolf_min_reproduction_age                                  ;; Minimum age, in ticks, that a wolf must have to reproduce
+;; wolf_initial_sight_radius                                  ;; Initial radius of neighoring cells that a wolf can see around itself
+;; wolf_cognitive_cost_initial                                ;; Initial cost of thinking of the wolf
+;; wolf_cognitive_cost_multiplier                             ;; rate at which the cost of thinking goes up per tick (it requires more energy to think with age)
+;; wolf_affinity_rabbit                                       ;; how much wolves like rabbits
+;; wolf_affinity_grass                                        ;; how much wolves like grass
+;; wolf_affinity_wolves                                       ;; how much wolves like other wolves              
+;; wolf_affinity_safety                                       ;; how much wolves like the rabbit safety zone
+
+;; wolf_affinity_rabbit_HE                                    ;; how much wolves like rabbits when they have high energy
+;; wolf_affinity_grass_HE                                     ;; how much wolves like grass when they have high energy
+;; wolf_affinity_wolf_HE                                      ;; how much wolves like other wolves when they have high energy
+;; wolf_affinity_safety_HE                                    ;; how much wolves like safety when they have high energy
+
+;; wolf_affinity_rabbit_LE                                    ;; how much wolves like rabbits when they have low energy
+;; wolf_affinity_grass_LE                                     ;; how much wolves like grass when they have low energyy
+;; wolf_affinity_wolf_LE                                      ;; how much wolves like other wolves when they have low energy
+;; wolf_affinity_safety_LE                                    ;; how much wolves like safety when they have low energy
+
+;; GLOBALS REQUIREMENTS
+;; wolf-open-cells                                            ;; patches that are available for wolves to move to. Can't be obstacles or warrens.
+;; wolves-born                                                ;; wolves born per time tick
+;; open-cells                                                 ;; cells that are not obstacles/impassable
+
+;; PATCHES-OWN REQUIREMENTS
+;; obstacle                                                   ;; Boolean (true/false) that states if the cell is an obstacle
+;; warren                                                     ;; Boolean (true/false) that states if the cell is a place that only rabbits can go
+
+;; TURTLES-OWN REQUIREMENTS
+;; energy                                                     ;; roughly equivalent to health points.  Typically consumed by turtles to perform actions like moving or reproducing.
+;; age                                                        ;; number of ticks that a turtle has been alive
+;; sight-radius                                               ;; sight radius
+;; cognitive-cost                                             ;; per-cell cost of thinking (thinking uses energy)                              
+;; cognitive-cost-multiplier                                  ;; rate at which the cost of thinking goes up per tick (it requires more energy to think with age)
+;; epsilon                                                    ;; percentage of time an agent takes a random move
+
+;; aff-rabbit-HE                                              ;; high energy affinity to rabbits
+;; aff-grass-HE                                               ;; high energy affinity to grass
+;; aff-wolf-HE                                                ;; high energy affinity to wolves
+;; aff-safety-HE                                              ;; high energy affinity to safety
+;; aff-rabbit-LE                                              ;; low energy affinity to rabbits
+;; aff-grass-LE                                               ;; low energy affinity to grass
+;; aff-wolf-LE                                                ;; low energy affinity to wolves
+;; aff-safety-LE                                              ;; low energy affinity to safety
+
+;; BREED-OWN REQUIREMENTS
+;; None                                                        ;; these wolves currently don't have any special breed powers
+
+breed [wolves wolf]                                            ;; create a breed to allow direct access to all turtles of type wolf
+
+;; SETUP REQUIREMENTS
+;; Include wolf-random-setup
+
+;; GO REQUIREMENTS
+;; Include wolf-affinity-move                                  ;; Move wolves                                    
+;; Include wolf-affinity-eat                                   ;; Wolves consume energy from eating rabbits
+;; Include wolf-affinity-age                                   ;; Apply aging effects to wolves
+;; Include wolf-affinity-reproduce                             ;; wolves clone themseleves if they are old enough to reproduce, and have enough energy
+;; Include wolf-affinity-inject                                ;; if there are no wolves, put the minimum number of wolves into the world
+
+
+to wolf-affinity-setup
+  create-wolves wolf_initial_number                             ;; create wolves equal to wolf_minimum_number from interface
+  [
+    set wolf-open-cells patches with [ true ]  ;; wolves cannot go on obstacles or warrens
+    
+    wolf-color
+    
+    set energy wolf_start_energy                                   ;; set wolf starting energy to wolf_start_energy from interface
+    set age 0                                                      ;; set birth age to zero
+    move-to one-of wolf-open-cells                                 ;; put each wolf in a random "open-cell" (see patches)
+    
+    ;;set size ((ln (energy + 1)) / 2)                               ;; set size to be half of the log of the energy (this visualizes the amount of energy they have, without the wolf becoming too large)
+    set size 2
+    
+    ;;set shape "wolf"                                               ;; set the wolf shape (the default shape does not have outlines, which is needed for visualization) 
+    ;;__set-line-thickness -.5                                       ;; set the shape line thickness so a visable weight
+    
+    set sight-radius random-range 0 initial_max_sight_radius       ;; set the wolf sight radius randomly
+   ; set cognitive-cost wolf_cognitive_cost_initial                 ;; set the wolf cost of thinking to wolf_cognitive_cost_initial from interface
+   ; set cognitive-cost-multiplier wolf_cognitive_cost_multiplier   ;; set the rate at which the cost of thinking increases to wolf_cognitive_cost_multiplier from interface
+    
+    set energy-threshold wolf_energy_threshold                     ;; set the wolf energy threshold 
+    set sight-radius wolf_sight_radius
+ ;   set aff-rabbit random-range -1 1
+ ;   set aff-wolf   random-range -1 1
+ ;   set aff-grass  random-range -1 1   
+   
+ ;   set aff-aff-rabbit random-range -1 1                  
+ ;   set aff-aff-grass  random-range -1 1               
+ ;   set aff-aff-wolf   random-range -1 1    
+    
+ ;   set agent-speed wolf_agent_speed                               ;; set the wolf speed from the interface
+  ]
+end
+
+
+
+to-report w_utility [w_energy]
+  
+  let r (count rabbits-here)
+  let ed 0
+ ; let r (sum [af-af-grass * aff-grass + af-af-wolf * aff-wolf + af-af-rabbit * aff-rabbit] of rabbits-here)
+  
+  report (r * (wolf_max_energy - w_energy))
+end
+
+
+
+to wolf-affinity-move                                              ;; wolves move based on their affinities towards rabbits, grass, wolves, and safety (see affinity-move-wolf2.nls for details)
+  ask wolves [ 
+    ;affinity-move-wolf 
+    let direction patch-here
+    let en energy
+    let grid neighbors
+    let pr_patch patch-here
+    set grid (patch-set pr_patch grid)
+    let best-neighbor 0
+
+    let current-sight-radius sight-radius
+
+
+    let available-neighbors (patches in-radius sight-radius)     ;; ELSE get a list of open neighboring cells that are in the rabbit's sight-radius
+;; Note: this includes the agent's patch. To exclude that use (patches in-radius sight-radius with [ (distance myself > 0) and (not obstacle) ])
+    set cells-considered (count available-neighbors)                                   ;; Keep track of how many cells we considered moving to
+
+    if ((count available-neighbors) > 1)                                               ;; check that we have more than one cell to choose from
+    [
+      ;; otherwise, pick the BEST neighbor
+      
+      set best-neighbor (max-one-of available-neighbors  [w_utility en])    ;; average the value of the affinities relative for each of the other rabbits' affinities
+    ]
+ ;   set direction (max-one-of grid                              ;; select the best neighbor as the one maximizing a weighted sum of its grass, wolves, and rabbits
+ ;     [w_utility en])
+    
+     face best-neighbor
+      let agent-step 1
+      fd agent-step
+    
+    ; update total lifetime for all wolves
+    set total-wolf-lifetime total-wolf-lifetime + 1
+    set energy (energy - 0.0005)
+  ]                                                                         
+end
+
+to wolf-affinity-eat                                                                                ;; Ask each wolf to:
+  ask wolves [
+    let prey (one-of rabbits-here)                                                                  ;; check if there is a rabbit in our current position
+    if (prey != nobody)                                                                             ;; IF there is a rabbit, THEN 
+    
+    [ set energy  min(list(energy + min(list (wolf_food_gain * ([energy] of prey)))) wolf_max_energy)    ;; make sure the energy we gain is not more than wolf_food_gain
+                                                                                                    ;; make sure the energy gained is not more than the maximum energy allowed
+                                                                                                  ;; get energy from eating
+      
+      ask prey [                                                                                    ;; kill the rabbit (more precisely, ask the caught rabbit to kill itself)
+                                                                                                    ;set total-rabbit-lifetime (total-rabbit-lifetime + age)                                      
+        set total_risk ( total_risk  - ([risk] of prey))
+        add-loot bag-amount
+        die
+      ]
+     ask patch-here [
+        set tm 0
+      ] 
+      
+    ] 
+  ]
+end
+
+to wolf-affinity-age
+  ask wolves[                                                   ;; Ask each wolf to:
+   ; affinity_costs                                              ;; pay the costs of existance (see affinity-costs.nls for details)
+    affinity-age
+    ifelse (energy < wolf_min_energy) or (age > wolf_max_age)   ;; See if it has the minimum energy to live, or is not too old to live
+    [ die 
+      set total-lifetime (total-lifetime + age)
+    ]                                                     ;; if it doesn't then die
+    [                                                           ;; IF it does then:
+      affinity-age                                              ;; age (see affinity-age.nls for details)                             
+    ]
+  ]
+end
+
+to wolf-affinity-reproduce                                      ;; Ask each wolf to:
+  ask wolves [                                                  
+    if (energy > wolf_min_reproduction_energy) and (age >= wolf_min_reproduction_age) and (count wolves < wolf_max_population) ;; Check IF past the reproduction threshold and are the minimum age to reproduce
+    [                                                                                                                          ;; AND check if the current population is not at its max 
+      set wolves-born (wolves-born + 1)                                                                                        ;; Increase the wolf count by 1                 
+      affinity-hatch                                                                                                           ;; hatch a new wolf (see affinity-hatch2.nls for details)
+      set energy (energy / 2)                                                                                                  ;; Lose half the energy
+    ]
+  ]
+end
+
+to wolf-color                                                      ;; defines the color of the wolf
+  set color wolf_color
+end
+

@@ -1,0 +1,341 @@
+;; RABBIT-AFFINITY2
+
+;; This module enables rabbits with affinities, evolution, and full modularity. It is a variant of rabbit-affinity.nls, which only accounted for four affinities
+
+;; INTERFACE REQUIREMENTS
+
+;; rabbit_initial_number                                        ;; Number of rabbits to create on the first tick of the simulation
+;; rabbit_max_population                                        ;; Maximum population of rabbits allowed in the simulation
+;; rabbit_max_age                                               ;; Maximum age, in ticks, that rabbits can live
+;; rabbit_start_energy                                          ;; Energy that each rabbit starts with
+;; rabbit_min_energy                                            ;; Energy cutoff below which a rabbit dies
+;; rabbit_max_energy                                            ;; Total energy that a rabbit is capable of holding
+;; rabbit_min_reproduction_energy                               ;; Energy cost for a rabbits to clone itself during reproduction
+;; rabbit_min_reproduction_age                                  ;; Minimum age, in ticks, that a rabbit must have to reproduce
+;; rabbit_initial_sight_radius                                  ;; Initial radius of neighoring cells that a rabbit can see around itself
+;; rabbit_cognitive_cost_initial                                ;; Initial cost of thinking of the rabbit
+;; cognitive_cost_multiplier                                    ;; rate at which the cost of thinking goes up per tick (it requires more energy to think with age)
+;; grass_max                                                    ;; Maximum amount of energy that grass can contain
+;; grass_growth_rate                                            ;; Rate at which grass grows (with binary grass, the amount of ticks elapsed before it grows back)
+
+;; rabbit_affinity_rabbit_HE                                    ;; how much rabbits like other rabbits when they have high energy
+;; rabbit_affinity_grass_HE                                     ;; how much rabbits like grass when they have high energy
+;; rabbit_affinity_wolf_HE                                      ;; how much rabbits like wolves when they have high energy
+;; rabbit_affinity_safety_HE                                    ;; how much rabbits like safety when they have high energy
+
+;; rabbit_affinity_rabbit_LE                                    ;; how much rabbits like other rabbits when they have low energy
+;; rabbit_affinity_grass_LE                                     ;; how much rabbits like grass when they have low energyy
+;; rabbit_affinity_wolf_LE                                      ;; how much rabbits like wolves when they have low energy
+;; rabbit_affinity_safety_LE                                    ;; how much rabbits like safety when they have low energy
+
+;; GLOBALS REQUIREMENTS
+;; rabbit-open-cells                                            ;; patches where rabbits can go
+;; open-cells                                                   ;; cells that are not obstacles/impassable
+;; rabbit-born                                                  ;; rabbits born per tick
+
+;; PATCHES-OWN REQUIREMENTS
+;; obstacle                                                     ;; Boolean (true/false) that states if the cell is an obstacle
+;; grass-amount                                                 ;; amount of grass in the cell. The amount of grass is equivalent to the energy available to a turtle
+;; grass-count-down                                             ;; the amount of ticks that must pass before grass reappears after being eaten
+
+;; TURTLES-OWN REQUIREMENTS
+;; energy                                                       ;; roughly equivalent to health points. Typically consumed by turtles to perform actions like moving or reproducing.
+;; age                                                          ;; number of ticks that a turtle has been alive
+;; sight-radius                                                 ;; sight radius
+;; cognitive-cost                                               ;; per-cell cost of thinking (thinking uses energy)
+;; coginitive-cost-multiplier                                   ;; rate at which the cost of thinking goes up per tick (it requires more energy to think with age)
+;; epsilon                                                      ;; percentage of time an agent takes a random move
+
+;; aff-rabbit                                                   ;; energy affinity to rabbits
+;; aff-grass                                                    ;; energy affinity to grass
+;; aff-wolf                                                     ;; energy affinity to wolves
+
+;; aff-aff-rabbit                                               ;; affinity to agents relative to their affinity for rabbit
+;; aff-aff-grass                                                ;; affinity to agents relative to their affinity for grass
+;; aff-aff-wolf                                                 ;; affinity to agents relative to their affinity for wolf
+
+;; BREED-OWN REQUIREMENTS
+;; None                                                         ;; not defining breed requirements using BREED-OWN currently
+
+
+breed [rabbits a-rabbit]                                        ;; create a breed to allow direct access to all turtles of type rabbit
+
+;; SETUP REQUIREMENTS
+;; Include rabbit-affinity-setup                                ;; Set up the rabbits in the world
+
+;; GO REQUIREMENTS
+;; Include rabbit-affinity-move                                 ;; Move rabbits
+;; Include rabbit-affinity-eat                                  ;; Rabbits consume energy from grass patches
+;; Inlcude rabbit-affinity-die                                  ;; Apply aging effects to rabbits
+;; Include rabbit-affinity-reproduce                            ;; Rabbits clone themseleves if they are old enough to reproduce, and have enough energy
+
+to-report random-range [min-value max-value]
+  report random-float (max-value - min-value) + min-value
+end
+
+to rabbit-affinity-setup                                        ;; set up the rabbits in the world, and initialize their variables
+  set rabbit-open-cells patches with [ true ]
+  
+  ;; create rabbit breed
+  create-rabbits rabbit_initial_number
+  [
+    set reproduction-age random-normal rabbit_min_reproduction_age 5
+    set energy rabbit_start_energy                              ;; set rabbit starting energy to rabbit_start_energy from interface
+    set age 0                                                   ;; set birth age to zero
+    move-to one-of patches                                   ;; put each rabbit in a random "open-cell" (see patches) **can be changed later to spawn only on warrens
+    set trauma initial_trauma
+    set genes n-values 171 [ random-range -1 1]
+    ;; set size ((ln (energy + 1)) / 2)                            ;; set size to be half of the log of the energy (this visualizes the amount of energy they have, without the rabbits becoming too large)
+    set size 2
+    set risk random-range  -1 1
+    
+    set total_risk (total_risk + risk)
+    set bag-capacity random-normal mean-bag-capacity 0.3
+    set bag-amount 0 
+   ; set empathy 0
+    ;;set shape "rabbit"                                          ;; set the rabbit shape (the default shape does not have outlines, which is needed for visualization)
+    ;;__set-line-thickness -.5                                    ;; set the shape line thickness so a visable weight
+
+   ; set cognitive-cost rabbit_cognitive_cost_initial                 ;; set the rabbit cost of thinking to rabbit_cognitive_cost_initial from interface 
+   ; set cognitive-cost-multiplier rabbit_cognitive_cost_multiplier   ;; set the rate at which the cost of thinking increases to rabbit_cognitive_cost_multiplier from interface
+
+    set energy-threshold rabbit_energy_threshold                     ;; set the rabbit energy threshold 
+   
+    ;; rabbits' genes
+   ; set sight-radius random-range 0 initial_max_sight_radius          ;; set the rabbit sight radius randomly
+    set sight-radius initial_max_sight_radius
+  ;  set aff-rabbit random-range -1 1
+  ;  set aff-wolf   random-range -1 1
+  ;  set aff-grass  random-range -1 1   
+   
+  ;  set aff-aff-rabbit random-range -1 1                  
+  ;  set aff-aff-grass  random-range -1 1               
+  ;  set aff-aff-wolf   random-range -1 1                  
+
+    rabbit-color
+    
+;    set agent-speed rabbit_agent_speed                                ;; set the rabbit speed from the interface
+
+ ;   set cumulative-diff-affinity 0
+;    set mean-diff-affinity 0
+  ]
+end
+
+
+
+to-report utility [r_energy rsk bc ba]
+  let g grass-amount
+  let w (count wolves-here)
+  let r (count rabbits-here)
+  let ed 0
+  ifelse (w > 0 and r > 0)[
+    set ed 1
+  ]
+  
+  [
+    set ed ( loot-amount / maximum-loot )
+  ]
+ ; let r (sum [af-af-grass * aff-grass + af-af-wolf * aff-wolf + af-af-rabbit * aff-rabbit] of rabbits-here)
+  
+  report (g * (rabbit_max_energy - r_energy) - w * 100 + (ed + 1) * loot-amount  * rsk)
+end 
+
+to-report utility_g
+  let g grass-amount / max-grass-amount  
+  report g
+end
+
+to-report utility_w
+  let w 0
+  if((count wolves) > 0)
+  [ set w (count wolves-here)/(count wolves) ]
+  report w
+end
+
+to-report utility_ds
+  let d 0
+  let w (count wolves-here)
+  let r (count rabbits-here)
+   if (w > 0 and r > 0)[
+    set d 1
+  ]
+  report d
+end
+
+to rabbit-color
+;  let cur-scale (sigmoid aff-grass)
+  let cur-color 0
+  
+;  ifelse (aff-grass < 0) 
+;  [
+    ;; smaller the number, DARKER the color
+;    set cur-color scale-color groupie_color cur-scale 0 0.5
+;    set cur-color (clamp-colorspace groupie_color cur-color)
+;  ] 
+;  [
+    set cur-color scale-color 20 10 20 0.5
+  ;  set cur-color (clamp-colorspace guru_color cur-color)
+;  ]
+  
+  set color cur-color
+end
+
+
+
+to-report clamp-colorspace [colorspace value]
+  if (value < colorspace + 5) [
+    set value colorspace + 5
+  ]
+  
+  if (value > colorspace + 8) [
+    set value colorspace + 8
+  ]
+  
+  report value
+end
+
+
+
+
+
+
+
+
+
+
+
+
+
+to rabbit-affinity-move2                                            ;; rabbits move based on their affinities towards rabbits, grass, wolves, and safety (see affinity-move-rabbit2.nls for details)
+ask rabbits [
+;   affinity-move-rabbit                                            ;; function from affinity-move-rabbit2.nls
+let direction patch-here
+
+
+set risk_set lput risk risk_set
+
+let best-neighbor 0
+
+let current-sight-radius sight-radius
+
+
+let available-neighbors (patches in-radius sight-radius)     ;; ELSE get a list of open neighboring cells that are in the rabbit's sight-radius
+;; Note: this includes the agent's patch. To exclude that use (patches in-radius sight-radius with [ (distance myself > 0) and (not obstacle) ])
+set cells-considered (count available-neighbors)                                   ;; Keep track of how many cells we considered moving to
+
+if ((count available-neighbors) > 1)                                               ;; check that we have more than one cell to choose from
+[
+;; otherwise, pick the BEST neighbor
+let r risk
+let en energy 
+let b_c bag-capacity
+let b_a bag-amount      
+set best-neighbor (max-one-of available-neighbors [utility en r b_c b_a])    ;; average the value of the affinities relative for each of the other rabbits' affinities
+]
+
+face best-neighbor                                                               ;; move towards the best neighbor
+
+let agent-step 1
+while [not (patch-here = best-neighbor) ] [
+;fd agent-step
+move-to best-neighbor
+face best-neighbor
+; set distance-moved distance-moved + agent-step
+; set move-quota move-quota - agent-step
+]
+
+
+set energy (energy - 0.0005)
+; face direct
+; let agent-step 1
+; fd agent-step
+
+; update total lifetime for all rabbits
+set total-rabbit-lifetime total-rabbit-lifetime + 1
+set energy (energy - 0.0015)
+;
+
+]
+
+;  fix-coordinates
+end
+
+
+
+
+
+
+
+
+
+
+
+to rabbit-affinity-eat
+  ask rabbits [                                                  ;; Ask each rabbit to:
+    
+    set bag-amount ( bag-amount * decay-rate )
+    let can-eat min (list rabbit_food_gain grass-amount)         ;; determine how much grass they can eat
+    
+    eat can-eat                                                  ;; eat the grass
+    
+    if ( (can-eat < rabbit_food_gain) and (bag-amount > 0) )
+    [
+      let food min(list bag-amount (rabbit_food_gain - can-eat))
+      set bag-amount ( bag-amount - food )
+      set can-eat rabbit_food_gain
+      
+    ]
+    
+    set energy min (list rabbit_max_energy (energy + can-eat))   ;; adjust the energy it currently has
+    
+  ]
+end
+
+
+
+to rabbit-affinity-gather
+  ask rabbits [                                                  ;; Ask each rabbit to:
+    
+    let space bag-capacity - bag-amount 
+    let can-gather min (list space rabbit_bag_gain grass-amount)         ;; determine how much grass they can eat
+    
+    eat can-gather                                                  ;; eat the grass
+    
+    set bag-amount min (list bag-capacity (bag-amount + can-gather))   ;; adjust the energy it currently has
+    ;show bag-amount
+    
+  ]
+  
+end
+
+
+
+
+to rabbit-affinity-age
+  ask rabbits[                                                      ;; Ask each rabbit to:
+   ; affinity_costs                                                  ;; pay the costs of existance
+    affinity-age
+    ifelse (energy < rabbit_min_energy) or (age > rabbit_max_age)   ;; See if it has the minimum energy to live, or is not too old to live
+    [
+      set total_risk (total_risk - risk)
+      die 
+    ]
+    [ affinity-age ]
+  ]
+end
+
+to rabbit-affinity-reproduce                                                                    ;; Ask each rabbit to:
+  ask rabbits [     
+    
+    
+ ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+    if (energy >= rabbit_min_reproduction_energy) and (age >= reproduction-age) and (count rabbits < rabbit_max_population);; Check IF past the reproduction threshold and are the minimum age to reproduce
+    [                                                                                                                                 ;; AND check if the current population is not at its max   
+      set rabbit-born (rabbit-born + 1)                                                         ;; Increase the rabbit count by 1
+      affinity-hatch                                                                            ;; Hatch a new rabbit (see affinity-hatch2.nls for details)
+      set energy (energy / 2)                                                                   ;; Lose half the energy
+      set bag-amount ( bag-amount / 2 )
+    ]
+  ]
+  
+end

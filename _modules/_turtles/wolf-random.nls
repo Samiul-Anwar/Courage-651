@@ -1,0 +1,118 @@
+;; WOLF-RANDOM
+
+;; This module enables wolves with a basic set of behaviours.  These wolves don't evolve or do anything fancy.
+;; They move randomly unless they are hungry and rabbit are in view.  Then they move to the closest rabbit, try to kill and eat it, repeat.
+;; Wolf population may be maintained at a minimum level via an interface control.
+
+;; INTERFACE REQUIREMENTS
+
+;; wolf_minimum_number                                        ;; Number of wolves to create on the first tick of the simulation
+;; wolf_start_energy                                          ;; Energy the wolves start with
+;; wolf_min_energy                                            ;; Energy cutoff below which a rabbit dies
+;; wolf_tick_cost                                             ;; Amount of energy a rabbit must pay to live into the next tick
+;; wolf_food_gain                                             ;; Upper limit on the amount of energy a rabbit can extract from a patch of grass
+;; wolf_max_energy                                            ;; Total energy that a rabbit is capable of holding
+
+;; GLOBALS REQUIREMENTS
+;; wolf-open-cells                                             ;; patches that are available for wolves to move to. Can't be obstacles or warrens.
+
+;; TURTLES-OWN REQUIREMENTS
+;; energy                                                      ;; roughly equivalent to health points.  Typically consumed by turtles to perform actions like moving or reproducing.
+;; age                                                         ;; number of ticks that a turtle has been alive
+
+;; BREED-OWN REQUIREMENTS
+;; None                                                        ;; these wolves don't have any special breed powers
+
+breed [wolves wolf]                                            ;; create a breed to allow direct access to all turtles of type wolf
+
+;; SETUP REQUIREMENTS
+;; Include wolf-random-setup
+
+;; GO REQUIREMENTS
+;; Include wolf-random-move                                     
+;; Include wolf-random-eat
+;; Include wolf-random-die
+;; Include wolf-random-reproduce
+;; Include wolf-random-inject
+
+
+to wolf-random-setup
+  create-wolves wolf_minimum_number                             ;; create wolves equal to wolf_minimum_number from interface
+  [
+    set wolf-open-cells patches with [ (not obstacle) and (not warren) ]  ;; wolves cannot go on obstacles or warrens
+    
+    set color blue                                              ;; sets wolf color to blue
+    set energy wolf_start_energy                                ;; set wolf starting energy to wolf_start_energy from interface
+    set age 0                                                   ;; set birth age to zero
+    set size 2                                                  ;; set the size so the wolf can be easily seen 
+    move-to one-of wolf-open-cells                              ;; put each wolf in a random "open-cell" (see patches)
+  ]
+end
+
+; this needs to be corrected to see if a rabbit is within a given radius and then to move towards that rabbit
+to wolf-random-move
+  ask wolves [                                                                            ;; Ask each wolf to:
+    let available-neighbors (wolf-open-cells in-radius wolf_sight_radius)                 ;; locate all patches within the sight radius of the wolf that are not obstacles and not warren
+    
+    ifelse energy >= wolf_satiation_percent * wolf_max_energy                             ;; determine if the wolf is hungry or not, based on a satiation percentage. 
+                                                                                          ;; IF its energy is greater than the satisfying percentage of the max energy available THEN move to a random neighboring patch.
+                                                                                          ;; IF wolf_satiation_percent is 0, the wolf will never eat
+                                                                                          ;; If wolf_satiation_percent is 1, the wolf will eat all the time
+    [                                                                                     
+      let random-neighbor one-of available-neighbors                                      ;; randomly choose a patch immediately adjacent to the patch it is currently on
+      face random-neighbor                                                                ;; face that patch 
+      fd 1                                                                                ;; move forward distance 1, in the direction of the random-neighbor
+      ;move-to random-neighbor                                                            ;; Move to the neighbouring patch if it is not an obstacle
+      fix-coordinates                                                                     ;; adjust location coordinates to be integer values
+    ]
+    [                                                                                     ;; ELSE go to the patch with the most rabbit on it (the wolf is hungry) 
+      let best-neighbor (max-one-of available-neighbors                                   ;; locate the patch with the most rabbit on it
+        [ count rabbit-here ])                                                             ;; face that patch
+      face best-neighbor                                                                  
+      fd 1                                                                                ;; move forward distance 1, in the direction of the best-neighbor
+      ;move-to best-neighbor
+      ; set distance-moved 1
+    ]  
+    set energy energy - wolf_tick_cost                                                    ;; pay the cost of living for this tick
+]  
+end
+
+to wolf-random-eat                                                                                  ;; Ask each wolf to:
+  ask wolves [
+    let prey (one-of rabbit-here)                                                                    ;; check if there is a rabbit in our current position
+    if (prey != nobody)                                                                             ;; IF there is a rabbit, THEN 
+                                                                                                    
+    [ set energy  min(list(energy + min(list wolf_food_gain [energy] of prey)) wolf_max_energy)     ;; make sure the energy we gain is not more than wolf_food_gain
+                                                                                                    ;; make sure the energy gained is not more than the maximum energy allowed
+                                                                                                    ;; get energy from eating
+      
+      ask prey [                                                                                    ;; kill the rabbit (more precisely, ask the caught rabbit to kill itself)
+        ;set total-rabbit-lifetime (total-rabbit-lifetime + age)                                      
+        die                                                                              
+      ]                                                                                             
+    ] 
+  ]
+end
+
+to wolf-random-die
+  ask wolves[                                                  ;; Ask each rabbit to:
+    ifelse energy < wolf_min_energy [ die ] [set age age + 1]  ;; Die if it doesn't have the minimum energy. Otherwise increment its age.
+  ]
+end
+
+to wolf-random-reproduce
+  ask wolves [                                                 ;; Ask each rabbit to:
+    if energy > wolf_min_reproduction_energy [               ;; Check energy level and if past the reproduction threshold:
+      set energy energy - wolf_min_reproduction_energy       ;; subtract the cost of reproduction from its energy levels
+      hatch 1 [ set energy (wolf_start_energy)                 ;; create a new turtle with the minimum energy level
+                set size 2                   
+      ]               
+    ]
+  ]
+end
+
+to wolf-random-inject                                       ;; check if there are no wolves in the world 
+ if (not (any? wolves)) [                                   ;; if so, put in the minimum initial number of wolves 
+   wolf-random-setup
+ ]
+end
